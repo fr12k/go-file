@@ -1,0 +1,52 @@
+# file Package
+
+The `file` package provides a high-level abstraction for reading and writing files in Go. 
+It offers an easy-to-use API for handling file operations with built-in support for lazy initialization and concurrency safety.
+
+## Motivation
+
+The Go standard library provides a really good set of packages and functions for working with files. However the API can be a bit to low-level
+specially for unit testing. The `file` package provides a high-level abstraction for reading and writing files in Go that also covers some of the
+shortcomings when it comes to testing.
+
+## Features
+- **Lazy Initialization**: File readers and writers are initialized only when needed.
+- **Concurrency-Safe**: Uses `sync.OnceValues` to ensure resources are initialized only once.
+- **Unified API**: Provides a structured interface for handling file I/O.
+- **Error Handling**: Includes constructors to create files with predefined errors.
+- **Supports Buffers**: Allows reading/writing from/to an in-memory buffer instead of a file.
+
+## Installation
+To use this package, simply import it in your Go project:
+
+```go
+import "github.com/fr12k/go-file"
+```
+
+## Example Usage
+
+To illustrate how to use the `file` package, consider the following example from the unit test
+code. The example demonstrates how to read and write to a file using the `file` package.
+
+It also shows how to setup file errors for testing purposes.
+
+{{ .Tests }}
+
+## API Reference
+
+### Structs
+#### `File`
+Represents a file abstraction for reading and writing.
+
+- `Exists() (bool, error)`: Checks if the file exists.
+- `Read() ([]byte, error)`: Reads the entire file.
+- `Write(p []byte) (int, error)`: Writes to the file.
+- `Close() error`: Closes the file.
+
+## Contributing
+Contributions are welcome! Please submit either an issue or a pull request with improvements or fixes.
+
+## License
+
+`go-mask` is licensed under the Apache 2 License. See the [LICENSE](LICENSE) file for more details.
+
