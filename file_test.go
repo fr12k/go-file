@@ -1,4 +1,4 @@
-package file
+package file_test
 
 import (
 	"bytes"
@@ -9,11 +9,13 @@ import (
 	"testing"
 	"testing/iotest"
 
+	"github.com/fr12k/go-file"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// @export
+// @markdown
 // TestNew illustrated how to initialise a file and read from it as well as write to it.
 func TestNew(t *testing.T) {
 	t.Parallel()
@@ -22,7 +24,7 @@ func TestNew(t *testing.T) {
 	defer os.Remove(filePath)
 
 	// Create a new file
-	file := New(filePath)
+	file := file.New(filePath)
 	assert.NotNil(t, file, "Expected a non-nil file")
 
 	// Test that the file path matches the expected one
@@ -39,11 +41,36 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, "Hello, World!", string(cnt))
 }
 
-// @export
+func TestOpen(t *testing.T) {
+	t.Parallel()
+	filePath := t.Name() + ".txt"
+	// Clean up the file after the test
+	defer os.Remove(filePath)
+
+	// Create a new file
+	f := file.Open()(filePath)
+	file := file.OpenFile(f)(filePath)
+	assert.NotNil(t, file, "Expected a non-nil file")
+
+	// Test that the file path matches the expected one
+	assert.Equal(t, filePath, file.FilePath, "Expected file path to match the input path")
+
+	// Write to the file (create if it not exists)
+	n, err := file.Write([]byte("Hello, World!"))
+	require.NoError(t, err)
+	assert.Equal(t, 13, n)
+
+	// Read from the file
+	cnt, err := file.Read()
+	require.NoError(t, err)
+	assert.Equal(t, "Hello, World!", string(cnt))
+}
+
+// @markdown
 // TestBufferReader illustrates how to read from a io.Reader.
 func TestBufferReader(t *testing.T) {
 	t.Parallel()
-	file := NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
+	file := file.NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
 
 	content, err := file.Read()
 	require.NoError(t, err)
@@ -53,11 +80,11 @@ func TestBufferReader(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// @export
+// @markdown
 // TestReadOfANonExistingFile illustrates what happens when you read from an non existing file.
 func TestReadOfANonExistingFile(t *testing.T) {
 	t.Parallel()
-	file := New("nonexistent.txt")
+	file := file.New("nonexistent.txt")
 
 	// Try to read the file
 	_, err := file.Read()
@@ -70,7 +97,7 @@ func TestReadOfANonExistingFile(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// @export
+// @markdown
 // TestFileExist illustrates how to check if a file exists.
 func TestFileExist(t *testing.T) {
 	t.Parallel()
@@ -78,7 +105,7 @@ func TestFileExist(t *testing.T) {
 	defer closeFnc()
 
 	// Create a File instance with a existent file
-	file := New(tmpFile)
+	file := file.New(tmpFile)
 
 	// Try to read the file
 	exists, err := file.Exists()
@@ -86,7 +113,7 @@ func TestFileExist(t *testing.T) {
 	assert.True(t, exists)
 }
 
-// @export
+// @markdown
 // TestNewWriter illustrates how to create a file writer to a non existing/existing directory
 // and write to a file. If the directory does not exist, it will be created then.
 func TestNewWriter(t *testing.T) {
@@ -96,7 +123,7 @@ func TestNewWriter(t *testing.T) {
 	defer os.RemoveAll(baseDir)
 	testFilePath := filepath.Join(baseDir, "not_exists", "output.log")
 
-	file := NewWriter(testFilePath)
+	file := file.NewWriter(testFilePath)
 
 	// Write to the file
 	_, err := file.Write([]byte("Hello, World!"))
@@ -126,7 +153,7 @@ func TestNewWriter(t *testing.T) {
 func TestFileExistFalse(t *testing.T) {
 	t.Parallel()
 	// Create a File instance with a non-existent file
-	file := New("nonexistent.txt")
+	file := file.New("nonexistent.txt")
 
 	// Try to read the file
 	exists, err := file.Exists()
@@ -134,18 +161,13 @@ func TestFileExistFalse(t *testing.T) {
 	assert.False(t, exists)
 }
 
-// @export
+// @markdown
 // TestReadError illustrates how to setup a file that always returns a defined error.
 // This is useful for testing error handling.
 func TestReadError(t *testing.T) {
 	t.Parallel()
 	// Create a File instance with a custom loader that fails
-	file := &File{
-		FilePath: "fakefile",
-		reader: func() (io.Reader, error) {
-			return nil, io.EOF // Simulate a load error
-		},
-	}
+	file := file.NewReaderError(io.EOF)
 
 	// Attempt to read, expecting an error
 	_, err := file.Read()
@@ -156,7 +178,7 @@ func TestReadError(t *testing.T) {
 func TestFileExistError(t *testing.T) {
 	t.Parallel()
 	// Create a File instance that always returns an error
-	file := NewReaderError(os.ErrClosed)
+	file := file.NewReaderError(os.ErrClosed)
 
 	// Try to read the file
 	exists, err := file.Exists()
@@ -178,15 +200,16 @@ func TestNewWriterComplex(t *testing.T) {
 		err := os.MkdirAll(filepath.Dir(testFilePath), os.ModePerm)
 		require.NoError(t, err)
 
-		file := NewWriter(testFilePath)
-		writer, err := file.writer()()
+		file := file.NewWriter(testFilePath)
+		n, err := file.Write([]byte{})
 		require.NoError(t, err)
+		assert.Equal(t, 0, n)
 
-		assert.Equal(t, filepath.Dir(testFilePath), writer.Directory)
-		assert.Equal(t, filepath.Base(testFilePath), writer.FileName)
+		assert.Equal(t, filepath.Dir(testFilePath), file.Writer.Directory)
+		assert.Equal(t, filepath.Base(testFilePath), file.Writer.FileName)
 
 		// Verify the file was created
-		_, err = os.Stat(filepath.Join(writer.Directory, writer.FileName))
+		_, err = os.Stat(filepath.Join(file.Writer.Directory, file.Writer.FileName))
 		require.NoError(t, err)
 	})
 
@@ -202,32 +225,10 @@ func TestNewWriterComplex(t *testing.T) {
 		require.NoError(t, err)
 		defer os.Remove(dir)
 
-		file := NewWriter(dir + "/")
-		_, err = file.writer()()
+		file := file.NewWriter(dir + "/")
+		_, err = file.Write([]byte{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create directory")
-	})
-
-	t.Run("FailsToCreateFile", func(t *testing.T) {
-		t.Parallel()
-		// Create a temporary directory
-		baseDir, err := os.MkdirTemp("", "readonly-test")
-		assert.NoError(t, err)
-		defer os.RemoveAll(baseDir)
-
-		testFilePath := filepath.Join(baseDir, "output.log")
-
-		file := NewWriter(testFilePath)
-		fnc := file.writer()
-
-		os.RemoveAll(baseDir)
-		_, err = fnc()
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to create file")
-
-		_, err = file.Write([]byte("Hello, World!"))
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to create file")
 	})
 }
 
@@ -240,32 +241,31 @@ func TestNewWriterBuffer(t *testing.T) {
 	// Clean up after the tests
 	defer os.RemoveAll(baseDir)
 	var buf bytes.Buffer
-	file := NewWriterBuffer(&buf, testFilePath)
-	writer, err := file.writer()()
-	require.NotNil(t, writer)
+	file := file.NewWriterBuffer(&buf, testFilePath)
+	_, err := file.Write([]byte{})
 	require.NoError(t, err)
 
-	assert.Equal(t, filepath.Dir(testFilePath), writer.Directory)
-	assert.Equal(t, filepath.Base(testFilePath), writer.FileName)
+	assert.Equal(t, filepath.Dir(testFilePath), file.Writer.Directory)
+	assert.Equal(t, filepath.Base(testFilePath), file.Writer.FileName)
 }
 
 func TestNewWriterError(t *testing.T) {
 	t.Parallel()
-	file := NewWriterError(os.ErrClosed)
-	_, err := file.writer()()
+	f := file.NewWriterError(os.ErrClosed)
+	_, err := f.Write([]byte{})
 	assert.Error(t, err)
 
-	file = NewWriterError(nil)
-	n, err := file.Write([]byte("Hello, World!"))
+	f = file.NewWriterError(nil)
+	n, err := f.Write([]byte("Hello, World!"))
 	assert.ErrorContains(t, err, "unexpected Writer is nil")
 	assert.Equal(t, -1, n)
 }
 
 func TestClose(t *testing.T) {
 	t.Parallel()
-	file := File{
+	file := file.File{
 		Reader: ErrReaderCloser{iotest.ErrReader(os.ErrClosed)},
-		Writer: &Writer{Writer: ErrWriterCloser{ErrWriter{os.ErrDeadlineExceeded}}},
+		Writer: &file.Writer{Writer: ErrWriterCloser{ErrWriter{os.ErrDeadlineExceeded}}},
 	}
 	err := file.Close()
 	assert.ErrorIs(t, err, os.ErrClosed)
@@ -274,16 +274,16 @@ func TestClose(t *testing.T) {
 
 func TestCloseWriter(t *testing.T) {
 	t.Parallel()
-	file := File{
-		Writer: &Writer{Writer: ErrWriterCloser{ErrWriter{os.ErrDeadlineExceeded}}},
+	f := file.File{
+		Writer: &file.Writer{Writer: ErrWriterCloser{ErrWriter{os.ErrDeadlineExceeded}}},
 	}
-	err := file.Close()
+	err := f.Close()
 	assert.ErrorIs(t, err, os.ErrDeadlineExceeded)
 }
 
 func TestCloseReader(t *testing.T) {
 	t.Parallel()
-	file := File{
+	file := file.File{
 		Reader: ErrReaderCloser{iotest.ErrReader(os.ErrClosed)},
 	}
 	err := file.Close()

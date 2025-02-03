@@ -37,6 +37,19 @@ func readerFunc(filePath string) func() (io.Reader, error) {
 	}
 }
 
+type OpenFunc = func(string) *File
+
+func Open() func(string) *File {
+	return New
+}
+
+func OpenFile(f *File) func(string) *File {
+	return func(filename string) *File {
+		f.FilePath = filename
+		return f
+	}
+}
+
 func New(filePath string) *File {
 	return &File{
 		FilePath: filePath,
@@ -58,9 +71,10 @@ func NewReaderError(err error) *File {
 	load := func() (io.Reader, error) {
 		return nil, err
 	}
-	return &File{
+	f := &File{
 		reader: sync.OnceValues(load),
 	}
+	return f
 }
 
 func writerFunc(filePath string) func() func() (*Writer, error) {

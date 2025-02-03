@@ -4,6 +4,12 @@ Generated TESTS.md
 The `file` package provides a high-level abstraction for reading and writing files in Go. 
 It offers an easy-to-use API for handling file operations with built-in support for lazy initialization and concurrency safety.
 
+## Motivation
+
+The Go standard library provides a really good set of packages and functions for working with files. However the API can be a bit to low-level
+specially for unit testing. The `file` package provides a high-level abstraction for reading and writing files in Go that also covers some of the
+shortcomings when it comes to testing.
+
 ## Features
 - **Lazy Initialization**: File readers and writers are initialized only when needed.
 - **Concurrency-Safe**: Uses `sync.OnceValues` to ensure resources are initialized only once.
@@ -20,7 +26,12 @@ import "github.com/fr12k/go-file"
 
 ## Example Usage
 
-# Go Test Cases
+To illustrate how to use the `file` package, consider the following example from the unit test
+code. The examples demonstrates how to read and write to a file using the `file` package.
+
+It also shows how to setup file errors for testing purposes.
+
+## Test Cases
 
 ## file_test.go
 
@@ -37,7 +48,7 @@ func TestNew(t *testing.T) {
 	defer os.Remove(filePath)
 
 	// Create a new file
-	file := New(filePath)
+	file := file.New(filePath)
 	assert.NotNil(t, file, "Expected a non-nil file")
 
 	// Test that the file path matches the expected one
@@ -62,7 +73,7 @@ TestBufferReader illustrates how to read from a io.Reader.
 ```go
 func TestBufferReader(t *testing.T) {
 	t.Parallel()
-	file := NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
+	file := file.NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
 
 	content, err := file.Read()
 	require.NoError(t, err)
@@ -80,7 +91,7 @@ TestReadOfANonExistingFile illustrates what happens when you read from an non ex
 ```go
 func TestReadOfANonExistingFile(t *testing.T) {
 	t.Parallel()
-	file := New("nonexistent.txt")
+	file := file.New("nonexistent.txt")
 
 	// Try to read the file
 	_, err := file.Read()
@@ -105,7 +116,7 @@ func TestFileExist(t *testing.T) {
 	defer closeFnc()
 
 	// Create a File instance with a existent file
-	file := New(tmpFile)
+	file := file.New(tmpFile)
 
 	// Try to read the file
 	exists, err := file.Exists()
@@ -126,33 +137,30 @@ func TestNewWriter(t *testing.T) {
 	// Clean up after the tests
 	defer os.RemoveAll(baseDir)
 	testFilePath := filepath.Join(baseDir, "not_exists", "output.log")
-	file := NewWriter(testFilePath)
 
-	writer, err := file.writer()()
-	require.NoError(t, err)
+	file := file.NewWriter(testFilePath)
 
-	assert.Equal(t, filepath.Dir(testFilePath), writer.Directory)
-	assert.Equal(t, filepath.Base(testFilePath), writer.FileName)
-
-	_, err = file.Write([]byte("Hello, World!"))
+	// Write to the file
+	_, err := file.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 
 	_, err = file.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 
 	// Verify the directory was created
-	_, err = os.Stat(writer.Directory)
+	_, err = os.Stat(file.Writer.Directory)
 	require.NoError(t, err)
 
 	// Verify the file was created
-	_, err = os.Stat(filepath.Join(writer.Directory, writer.FileName))
+	_, err = os.Stat(filepath.Join(file.Writer.Directory, file.Writer.FileName))
 	require.NoError(t, err)
 
+	// Read from the same file
 	cnr, err := file.Read()
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!Hello, World!", string(cnr))
 
-	// Test Close
+	// Close the file
 	err = file.Close()
 	require.NoError(t, err)
 }
@@ -167,12 +175,7 @@ This is useful for testing error handling.
 func TestReadError(t *testing.T) {
 	t.Parallel()
 	// Create a File instance with a custom loader that fails
-	file := &File{
-		FilePath: "fakefile",
-		reader: func() (io.Reader, error) {
-			return nil, io.EOF // Simulate a load error
-		},
-	}
+	file := file.NewReaderError(io.EOF)
 
 	// Attempt to read, expecting an error
 	_, err := file.Read()
@@ -180,6 +183,7 @@ func TestReadError(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 }
 ```
+
 
 
 ## API Reference
