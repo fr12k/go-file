@@ -1,5 +1,5 @@
 # This has to be >= v1.57.0 for module plugin system support.
-version: v1.63.4
+version: main
 destination: ./build/
 name: custom-gcl
 plugins:

@@ -24,19 +24,19 @@ func TestNew(t *testing.T) {
 	defer os.Remove(filePath)
 
 	// Create a new file
-	file := file.New(filePath)
-	assert.NotNil(t, file, "Expected a non-nil file")
+	f := file.New(filePath)
+	assert.NotNil(t, f, "Expected a non-nil file")
 
 	// Test that the file path matches the expected one
-	assert.Equal(t, filePath, file.FilePath, "Expected file path to match the input path")
+	assert.Equal(t, filePath, f.FilePath, "Expected file path to match the input path")
 
 	// Write to the file (create if it not exists)
-	n, err := file.Write([]byte("Hello, World!"))
+	n, err := f.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 	assert.Equal(t, 13, n)
 
 	// Read from the file
-	cnt, err := file.Read()
+	cnt, err := f.Read()
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!", string(cnt))
 }
@@ -49,19 +49,19 @@ func TestOpen(t *testing.T) {
 
 	// Create a new file
 	f := file.Open()(filePath)
-	file := file.OpenFile(f)(filePath)
-	assert.NotNil(t, file, "Expected a non-nil file")
+	f2 := file.OpenFile(f)(filePath)
+	assert.NotNil(t, f2, "Expected a non-nil file")
 
 	// Test that the file path matches the expected one
-	assert.Equal(t, filePath, file.FilePath, "Expected file path to match the input path")
+	assert.Equal(t, filePath, f2.FilePath, "Expected file path to match the input path")
 
 	// Write to the file (create if it not exists)
-	n, err := file.Write([]byte("Hello, World!"))
+	n, err := f2.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 	assert.Equal(t, 13, n)
 
 	// Read from the file
-	cnt, err := file.Read()
+	cnt, err := f2.Read()
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!", string(cnt))
 }
@@ -70,13 +70,13 @@ func TestOpen(t *testing.T) {
 // TestBufferReader illustrates how to read from a io.Reader.
 func TestBufferReader(t *testing.T) {
 	t.Parallel()
-	file := file.NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
+	f := file.NewReader(io.NopCloser(strings.NewReader("Hello, World!")))
 
-	content, err := file.Read()
+	content, err := f.Read()
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!", string(content))
 
-	err = file.Close()
+	err = f.Close()
 	require.NoError(t, err)
 }
 
@@ -84,16 +84,16 @@ func TestBufferReader(t *testing.T) {
 // TestReadOfANonExistingFile illustrates what happens when you read from an non existing file.
 func TestReadOfANonExistingFile(t *testing.T) {
 	t.Parallel()
-	file := file.New("nonexistent.txt")
+	f := file.New("nonexistent.txt")
 
 	// Try to read the file
-	_, err := file.Read()
+	_, err := f.Read()
 	// Error of type ErrNotExist is thrown
 	assert.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
 
 	// Close the file doesn't have an effect because its non existing
-	err = file.Close()
+	err = f.Close()
 	require.NoError(t, err)
 }
 
@@ -105,10 +105,10 @@ func TestFileExist(t *testing.T) {
 	defer closeFnc()
 
 	// Create a File instance with a existent file
-	file := file.New(tmpFile)
+	f := file.New(tmpFile)
 
 	// Try to read the file
-	exists, err := file.Exists()
+	exists, err := f.Exists()
 	require.NoError(t, err)
 	assert.True(t, exists)
 }
@@ -123,40 +123,40 @@ func TestNewWriter(t *testing.T) {
 	defer os.RemoveAll(baseDir)
 	testFilePath := filepath.Join(baseDir, "not_exists", "output.log")
 
-	file := file.NewWriter(testFilePath)
+	f := file.NewWriter(testFilePath)
 
 	// Write to the file
-	_, err := file.Write([]byte("Hello, World!"))
+	_, err := f.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 
-	_, err = file.Write([]byte("Hello, World!"))
+	_, err = f.Write([]byte("Hello, World!"))
 	require.NoError(t, err)
 
 	// Verify the directory was created
-	_, err = os.Stat(file.Writer.Directory)
+	_, err = os.Stat(f.Writer.Directory)
 	require.NoError(t, err)
 
 	// Verify the file was created
-	_, err = os.Stat(filepath.Join(file.Writer.Directory, file.Writer.FileName))
+	_, err = os.Stat(filepath.Join(f.Writer.Directory, f.Writer.FileName))
 	require.NoError(t, err)
 
 	// Read from the same file
-	cnr, err := file.Read()
+	cnr, err := f.Read()
 	require.NoError(t, err)
 	assert.Equal(t, "Hello, World!Hello, World!", string(cnr))
 
 	// Close the file
-	err = file.Close()
+	err = f.Close()
 	require.NoError(t, err)
 }
 
 func TestFileExistFalse(t *testing.T) {
 	t.Parallel()
 	// Create a File instance with a non-existent file
-	file := file.New("nonexistent.txt")
+	f := file.New("nonexistent.txt")
 
 	// Try to read the file
-	exists, err := file.Exists()
+	exists, err := f.Exists()
 	require.NoError(t, err)
 	assert.False(t, exists)
 }
@@ -167,10 +167,10 @@ func TestFileExistFalse(t *testing.T) {
 func TestReadError(t *testing.T) {
 	t.Parallel()
 	// Create a File instance with a custom loader that fails
-	file := file.NewReaderError(io.EOF)
+	f := file.NewReaderError(io.EOF)
 
 	// Attempt to read, expecting an error
-	_, err := file.Read()
+	_, err := f.Read()
 	require.Error(t, err)
 	assert.Equal(t, io.EOF, err)
 }
@@ -178,10 +178,10 @@ func TestReadError(t *testing.T) {
 func TestFileExistError(t *testing.T) {
 	t.Parallel()
 	// Create a File instance that always returns an error
-	file := file.NewReaderError(os.ErrClosed)
+	f := file.NewReaderError(os.ErrClosed)
 
 	// Try to read the file
-	exists, err := file.Exists()
+	exists, err := f.Exists()
 	assert.Error(t, err)
 	assert.False(t, exists)
 }
@@ -200,16 +200,16 @@ func TestNewWriterComplex(t *testing.T) {
 		err := os.MkdirAll(filepath.Dir(testFilePath), os.ModePerm)
 		require.NoError(t, err)
 
-		file := file.NewWriter(testFilePath)
-		n, err := file.Write([]byte{})
+		f := file.NewWriter(testFilePath)
+		n, err := f.Write([]byte{})
 		require.NoError(t, err)
 		assert.Equal(t, 0, n)
 
-		assert.Equal(t, filepath.Dir(testFilePath), file.Writer.Directory)
-		assert.Equal(t, filepath.Base(testFilePath), file.Writer.FileName)
+		assert.Equal(t, filepath.Dir(testFilePath), f.Writer.Directory)
+		assert.Equal(t, filepath.Base(testFilePath), f.Writer.FileName)
 
 		// Verify the file was created
-		_, err = os.Stat(filepath.Join(file.Writer.Directory, file.Writer.FileName))
+		_, err = os.Stat(filepath.Join(f.Writer.Directory, f.Writer.FileName))
 		require.NoError(t, err)
 	})
 
@@ -225,8 +225,8 @@ func TestNewWriterComplex(t *testing.T) {
 		require.NoError(t, err)
 		defer os.Remove(dir)
 
-		file := file.NewWriter(dir + "/")
-		_, err = file.Write([]byte{})
+		f := file.NewWriter(dir + "/")
+		_, err = f.Write([]byte{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create directory")
 	})
@@ -241,12 +241,12 @@ func TestNewWriterBuffer(t *testing.T) {
 	// Clean up after the tests
 	defer os.RemoveAll(baseDir)
 	var buf bytes.Buffer
-	file := file.NewWriterBuffer(&buf, testFilePath)
-	_, err := file.Write([]byte{})
+	f := file.NewWriterBuffer(&buf, testFilePath)
+	_, err := f.Write([]byte{})
 	require.NoError(t, err)
 
-	assert.Equal(t, filepath.Dir(testFilePath), file.Writer.Directory)
-	assert.Equal(t, filepath.Base(testFilePath), file.Writer.FileName)
+	assert.Equal(t, filepath.Dir(testFilePath), f.Writer.Directory)
+	assert.Equal(t, filepath.Base(testFilePath), f.Writer.FileName)
 }
 
 func TestNewWriterError(t *testing.T) {
@@ -263,11 +263,11 @@ func TestNewWriterError(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	t.Parallel()
-	file := file.File{
+	f := file.File{
 		Reader: ErrReaderCloser{iotest.ErrReader(os.ErrClosed)},
 		Writer: &file.Writer{Writer: ErrWriterCloser{ErrWriter{os.ErrDeadlineExceeded}}},
 	}
-	err := file.Close()
+	err := f.Close()
 	assert.ErrorIs(t, err, os.ErrClosed)
 	assert.ErrorIs(t, err, os.ErrDeadlineExceeded)
 }
@@ -283,10 +283,10 @@ func TestCloseWriter(t *testing.T) {
 
 func TestCloseReader(t *testing.T) {
 	t.Parallel()
-	file := file.File{
+	f := file.File{
 		Reader: ErrReaderCloser{iotest.ErrReader(os.ErrClosed)},
 	}
-	err := file.Close()
+	err := f.Close()
 	assert.ErrorIs(t, err, os.ErrClosed)
 }
 
