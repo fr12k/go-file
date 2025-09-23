@@ -1,4 +1,4 @@
-name: Golang Build Github Actions
+name: Golang Build Makefile Github Workflow
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
       - main
 
 concurrency:
-  group: go_build_${{ github.head_ref }}
+  group: go_build_make${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -27,13 +27,8 @@ jobs:
           go-version-file: go.mod
       # to support custom-gcl golangci-lint module system check https://github.com/golangci/golangci-lint-action/issues/1076
       - name: Run golangci-lint
-        uses: containifyci/.github/github-actions/golangci-lint@main
+        run: make lint
       - name: Build
-        run: |
-          go build ./...
-
+        run: make build
       - name: Test
-        run: |
-          go clean -testcache
-          go test -v -cover -coverprofile coverage.txt -race ./...
-          go tool cover -func coverage.txt
+        run: make test
