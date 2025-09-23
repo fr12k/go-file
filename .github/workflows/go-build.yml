@@ -1,4 +1,4 @@
-name: Testing Golang Github Actions
+name: Golang Build Github Actions
 
 on:
   pull_request:
