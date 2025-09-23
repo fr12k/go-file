@@ -1,0 +1,8 @@
+{
+  "name": "go-file",
+  "engineVersion": "v0.18.19",
+  "sdk": {
+    "source": "go"
+  },
+  "source": ".dagger"
+}
