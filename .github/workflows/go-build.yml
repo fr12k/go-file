@@ -1,0 +1,39 @@
+name: Testing Golang Github Actions
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: go_build_${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-go-actions:
+    name: Build Go
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for checkout
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # to support custom-gcl golangci-lint module system check https://github.com/golangci/golangci-lint-action/issues/1076
+      - name: Run golangci-lint
+        uses: containifyci/.github/github-actions/golangci-lint@main
+      - name: Build
+        run: |
+          go build ./...
+
+      - name: Test
+        run: |
+          go clean -testcache
+          go test -v -cover -coverprofile coverage.txt -race ./...
+          go tool cover -func coverage.txt
