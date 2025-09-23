@@ -29,11 +29,11 @@ func (m *GoFile) Build(source *dagger.Directory) *dagger.Container {
 		WithExec([]string{"go", "test", "./..."})
 }
 
-func (m *GoFile) Lint(source *dagger.Directory) /*(string, error)*/ *dagger.Container {
+func (m *GoFile) Lint(source *dagger.Directory) *dagger.Container {
 	return dag.Container().
 		From("golangci/golangci-lint:latest").
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"golangci-lint", "custom"}).
-		WithExec([]string{"./build/custom-gcl"})
+		WithExec([]string{"./build/custom-gcl", "run", "--fix", "./..."})
 }
