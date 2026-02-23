@@ -3,7 +3,7 @@
 
 install:
 	go mod tidy
-	$(MAKE) build/goflink-golint
+	$(MAKE) build/custom-gcl
 
 # this compile the custom linter `goflink-golint` into the `build` only once
 build/custom-gcl:
