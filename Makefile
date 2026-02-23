@@ -5,7 +5,7 @@ install:
 	go mod tidy
 	$(MAKE) build/custom-gcl
 
-# this compile the custom linter `goflink-golint` into the `build` only once
+# this compile the custom linter `custom-gcl` into the `build` only once
 build/custom-gcl:
 	go tool golangci-lint custom
 
