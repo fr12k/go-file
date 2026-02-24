@@ -101,8 +101,7 @@ func TestReadOfANonExistingFile(t *testing.T) {
 // TestFileExist illustrates how to check if a file exists.
 func TestFileExist(t *testing.T) {
 	t.Parallel()
-	tmpFile, closeFnc := createFile(t, "Hello, World!")
-	defer closeFnc()
+	tmpFile := createFile(t, "Hello, World!")
 
 	// Create a File instance with a existent file
 	f := file.New(tmpFile)
@@ -318,17 +317,15 @@ func (e ErrReaderCloser) Close() error {
 	return err
 }
 
-func createFile(t *testing.T, cnt string) (name string, clean func()) {
+func createFile(t *testing.T, cnt string) (name string) {
 	t.Helper()
 	// Create a temporary file with test content
-	tmpFile, err := os.CreateTemp("", "testfile")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "testfile")
 	require.NoError(t, err)
 
 	_, err = tmpFile.WriteString(cnt)
 	require.NoError(t, err)
 
 	require.NoError(t, tmpFile.Close())
-	return tmpFile.Name(), func() {
-		os.Remove(tmpFile.Name())
-	}
+	return tmpFile.Name()
 }
