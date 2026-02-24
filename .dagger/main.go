@@ -22,7 +22,7 @@ type GoFile struct{}
 
 func (m *GoFile) Build(source *dagger.Directory) *dagger.Container {
 	return dag.Container().
-		From("golang:1.25").
+		From("golang:1.26").
 		WithMountedDirectory("/src", source).
 		WithWorkdir("/src").
 		WithExec([]string{"go", "build", "./..."}).
