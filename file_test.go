@@ -187,13 +187,12 @@ func TestFileExistError(t *testing.T) {
 
 func TestNewWriterComplex(t *testing.T) {
 	t.Parallel()
-	// Test directory structure
-	baseDir := "testdata"
 
 	t.Run("CreatesWriterWhenDirectoryExists", func(t *testing.T) {
 		t.Parallel()
-		// Clean up after the tests
-		defer os.RemoveAll(baseDir)
+		// Use an isolated temp directory per subtest so parallel subtests
+		// don't clobber each other's setup (t.TempDir is auto-cleaned).
+		baseDir := t.TempDir()
 		testFilePath := filepath.Join(baseDir, "logs-exists", "output.log")
 		// Ensure the directory exists
 		err := os.MkdirAll(filepath.Dir(testFilePath), os.ModePerm)
@@ -214,15 +213,15 @@ func TestNewWriterComplex(t *testing.T) {
 
 	t.Run("FailsToCreateDirectory", func(t *testing.T) {
 		t.Parallel()
-		// Clean up after the tests
-		defer os.RemoveAll(baseDir)
+		// Use an isolated temp directory per subtest so parallel subtests
+		// don't clobber each other's setup (t.TempDir is auto-cleaned).
+		baseDir := t.TempDir()
 		// Create a file at the directory path to cause MkdirAll to fail
 		err := os.MkdirAll(baseDir, os.ModePerm)
 		require.NoError(t, err)
 		dir := filepath.Join(baseDir, "logs")
 		err = os.WriteFile(dir, []byte{}, 0o600) // Create a file where the directory should be
 		require.NoError(t, err)
-		defer os.Remove(dir)
 
 		f := file.NewWriter(dir + "/")
 		_, err = f.Write([]byte{})
